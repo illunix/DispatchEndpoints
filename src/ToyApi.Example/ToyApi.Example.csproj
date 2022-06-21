@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ToyApi.Extensions\ToyApi.Extensions.csproj" />
     <ProjectReference Include="..\ToyAPI\ToyApi.csproj" />
   </ItemGroup>
 

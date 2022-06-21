@@ -1,14 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using Microsoft.Extensions.Configuration;
+using ToyApi.Filters;
 
 namespace ToyApi.Extensions;
 
-public static class ServicesExtensions
+public static class ServiceCollectionExtensions
 {
-    public static IMvcBuilder AddToyApi(this IMvcBuilder builder)
+    public static IServiceCollection AddToyApi(this IServiceCollection services)
     {
-        var services = builder.Services;
+        services.AddControllers(options =>
+        {
+            options.Filters.Add(typeof(ValidatorActionFilter));
+        });
 
         services.Scan(q => q.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
             .AddClasses(q => q.AssignableTo(typeof(IRequestHandler<>)))
@@ -19,6 +23,6 @@ public static class ServicesExtensions
 
         services.AddSingleton<IDispatcher, Dispatcher>();
 
-        return builder;
+        return services;
     }
 }

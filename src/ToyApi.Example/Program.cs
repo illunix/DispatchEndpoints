@@ -3,9 +3,10 @@ using ToyApi.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
-services.AddControllers().AddToyApi();
-services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
+services
+    .AddToyApi()
+    .AddEndpointsApiExplorer()
+    .AddSwaggerGen();
 
 var app = builder.Build();
 

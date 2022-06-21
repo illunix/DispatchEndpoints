@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToyApi.Example", "src\ToyAp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToyApi", "src\ToyApi\ToyApi.csproj", "{D813F138-4B11-4AAF-B1B4-B40E24D41CFD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToyApi.Extensions", "src\ToyApi.Extensions\ToyApi.Extensions.csproj", "{464CC341-3818-4804-B43F-824867346894}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D813F138-4B11-4AAF-B1B4-B40E24D41CFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D813F138-4B11-4AAF-B1B4-B40E24D41CFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D813F138-4B11-4AAF-B1B4-B40E24D41CFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{464CC341-3818-4804-B43F-824867346894}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{464CC341-3818-4804-B43F-824867346894}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{464CC341-3818-4804-B43F-824867346894}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{464CC341-3818-4804-B43F-824867346894}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
