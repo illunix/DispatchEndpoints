@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ToyApi.Interfaces;
+namespace ToyApi;
 
 public interface IRequestHandler<in TRequest> where TRequest : class, IRequest
 {

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ToyAPI\ToyApi.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <ProjectReference Include="..\ToyAPI\ToyApi.csproj" />
   </ItemGroup>
 
 </Project>
