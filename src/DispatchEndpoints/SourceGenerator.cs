@@ -182,19 +182,11 @@ $@"namespace {namespaceName}
         return sourceBuilder.ToString();
     }
 
-    private static string ConvertStatusCode(StatusCodes statusCode) => statusCode switch
-    {
-        StatusCodes.Ok => "Status200OK",
-        StatusCodes.BadRequest => "Status400BadRequest",
-        StatusCodes.Unathorized => "Status401Unauthorized",
-        StatusCodes.NotFound => "Status404NotFound",
-        StatusCodes.NoContent => "Status204NoContent",
-        _ => ""
-    };
-
     private static string GenerateCommandAndQueries(GeneratorExecutionContext context)
     {
         var sourceBuilder = new StringBuilder();
+
+        sourceBuilder.Append("using DispatchEndpoints;");
 
         foreach (var clazz in _classes)
         {
@@ -308,6 +300,15 @@ $@"namespace {namespaceName}
         return sourceBuilder.ToString();
     }
 
+    private static string ConvertStatusCode(StatusCodes statusCode) => statusCode switch
+    {
+        StatusCodes.Ok => "Status200OK",
+        StatusCodes.BadRequest => "Status400BadRequest",
+        StatusCodes.Unathorized => "Status401Unauthorized",
+        StatusCodes.NotFound => "Status404NotFound",
+        StatusCodes.NoContent => "Status204NoContent",
+        _ => ""
+    };
     private static void GetClasses(
        GeneratorExecutionContext context,
        SyntaxReceiver receiver
