@@ -5,24 +5,24 @@ using DispatchEndpoints.Filters;
 
 namespace DispatchEndpoints;
 
-public static class ServicesExtensions
+public static class MvcExtensions
 {
-    public static IServiceCollection AddDispatchEndpoints(this IServiceCollection services)
+    public static IServiceCollection AddDispatchEndpoints(this IMvcBuilder builder)
     {
-        services.AddMvcCore(options =>
+        builder.Services.AddMvcCore(options =>
         {
             options.Filters.Add(typeof(ValidatorActionFilter));
         });
 
-        services.Scan(q => q.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
+        builder.Services.Scan(q => q.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
             .AddClasses(q => q.AssignableTo(typeof(IRequestHandler<>)))
             .AddClasses(q => q.AssignableTo(typeof(IRequestHandler<,>)))
             .AsImplementedInterfaces()
             .WithTransientLifetime()
         );
 
-        services.AddSingleton<IDispatcher, Dispatcher>();
+        builder.Services.AddSingleton<IDispatcher, Dispatcher>();
 
-        return services;
+        return builder.Services;
     }
 }
