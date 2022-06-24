@@ -6,9 +6,9 @@
 )]
 public static partial class GetAll
 {
-    public sealed partial record Query;
+    public partial record Query;
 
-    public sealed record Customer(string Name);
+    public record Customer(string Name);
 
     public static async Task<IEnumerable<Customer>> Handler()
     {
