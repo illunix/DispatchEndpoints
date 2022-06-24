@@ -9,5 +9,7 @@ namespace DispatchEndpoints;
 public enum StatusCodes
 {
     Ok,
-    NotFound
+    BadRequest,
+    NotFound,
+    Unauthorized
 }

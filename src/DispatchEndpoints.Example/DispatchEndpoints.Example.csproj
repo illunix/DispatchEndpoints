@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DispatchEndpoints\DispatchEndpoints.csproj" />
+    <ProjectReference Include="..\DispatchEndpoints\DispatchEndpoints.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
 </Project>

@@ -83,10 +83,26 @@ using DispatchEndpoints;
                 .Select(q => q.Value.Value!)
                 .FirstOrDefault()).ToString();
             var methodName = clazz.Name;
+            /*
             var statusCode = ((StatusCodes)attrProperties
                 .Where(q => q.Key == "StatusCode")
                 .Select(q => q.Value.Value!)
                 .FirstOrDefault()).ToString();
+            */
+            var producesResponseTypes = attrProperties
+                .Where(q => q.Key == "ProducesResponseTypes")
+                .Select(q => q.Value.Values)
+                .FirstOrDefault();
+
+            var producesResponseTypesAttrsBuilder = new StringBuilder();
+
+            foreach (var responseType in producesResponseTypes)
+            {
+                producesResponseTypesAttrsBuilder.Append($"[ProducesResponseType({(StatusCodes)responseType.Value!})]");
+            }
+
+            var producesResponseTypesAttrs = producesResponseTypesAttrsBuilder.ToString();
+
             var route = attrProperties
                 .Where(q => q.Key == "Route")
                 .Select(q => q.Value.Value!.ToString())
@@ -133,7 +149,7 @@ using DispatchEndpoints;
 
             var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
             var dispatcher = $"{(queryExist ? "var query = " : "")}await Dispatcher.{(commandExist ? "Send(request)" : "")}{(queryExist ? "Query(request)" : "")};";
-            var returnStatusCode = $"return {statusCode}({(queryExist ? "query" : "")});";
+            var returnStatusCode = $"return {""}({(queryExist ? "query" : "")});";
 
             var handlerMethod = clazz.GetMembers()
                 .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
@@ -156,7 +172,7 @@ $@"namespace {namespaceName}
     {routeAttr}
     public partial class {controllerName}Controller : ApiControllerBase
     {{
-        {httpAttr}{authAttr}
+        {httpAttr}{authAttr}{producesResponseTypesAttrs}
         public async Task<{returnType}> {methodNameWithParams}
         {{
             {dispatcher}

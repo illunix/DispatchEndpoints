@@ -1,14 +1,18 @@
 ﻿namespace DispatchEndpoints.Example.Endpoints.Customers;
 
 [DispatchEndpoint(
-    RequestMethod = RequestMethods.Get,
-    StatusCode = StatusCodes.Ok
+    RequestMethod = RequestMethods.GET,
+    ProducesResponseTypes = new[]
+    { 
+        StatusCodes.Ok,
+        StatusCodes.BadRequest
+    }
 )]
 public static partial class GetAll
 {
-    public sealed partial record Query;
+    public partial record Query;
 
-    public sealed record Customer(string Name);
+    public record Customer(string Name);
 
     public static async Task<IEnumerable<Customer>> Handler()
     {

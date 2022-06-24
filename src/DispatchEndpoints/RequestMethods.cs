@@ -8,8 +8,8 @@ namespace DispatchEndpoints;
 
 public enum RequestMethods
 {
-    Get,
-    Post,
-    Put,
-    Delete,
+    GET,
+    POST,
+    PUT,
+    DELETE,
 }
