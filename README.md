@@ -7,5 +7,9 @@ DispatchEndpoints it's a library what provide source generator what generate con
 ## Installation
 
 ```
-PM> Install-Package DispatchEndpoints
+Install-Package DispatchEndpoints
 ```
+
+## Usage
+```csharp
+services.AddControllers().AddDispatchEndpoints()
