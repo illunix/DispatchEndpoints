@@ -11,5 +11,6 @@ public enum StatusCodes
     Ok,
     BadRequest,
     NotFound,
-    Unauthorized
+    Unathorized,
+    NoContent
 }

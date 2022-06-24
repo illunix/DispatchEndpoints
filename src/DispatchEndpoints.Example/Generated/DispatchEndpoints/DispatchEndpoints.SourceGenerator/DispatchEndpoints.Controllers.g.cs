@@ -7,12 +7,14 @@ namespace DispatchEndpoints.Example.Endpoints.Customers
     [Route("customers")]
     public partial class CustomersController : ApiControllerBase
     {
-        [HttpGET()]
+        [HttpGet()]
+		[ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.Status200OK)]
+		[ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<System.Collections.Generic.IEnumerable<DispatchEndpoints.Example.Endpoints.Customers.GetAll.Customer>>> GetAll([FromQuery] GetAll.Query request)
         {
             var query = await Dispatcher.Query(request);
 
-            return (query);
+            return Ok(query);
         }
     }
 }

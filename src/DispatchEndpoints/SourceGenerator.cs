@@ -81,24 +81,19 @@ using DispatchEndpoints;
             var reqMethod = ((RequestMethods)attrProperties
                 .Where(q => q.Key == "RequestMethod")
                 .Select(q => q.Value.Value!)
-                .FirstOrDefault()).ToString();
+                .FirstOrDefault()).ToString().ToLowerInvariant().FirstCharToUpper();
             var methodName = clazz.Name;
-            /*
-            var statusCode = ((StatusCodes)attrProperties
-                .Where(q => q.Key == "StatusCode")
-                .Select(q => q.Value.Value!)
-                .FirstOrDefault()).ToString();
-            */
+
             var producesResponseTypes = attrProperties
                 .Where(q => q.Key == "ProducesResponseTypes")
-                .Select(q => q.Value.Values)
+                .Select(q => q.Value.Values.Select(q => (StatusCodes)q.Value!))
                 .FirstOrDefault();
 
             var producesResponseTypesAttrsBuilder = new StringBuilder();
 
             foreach (var responseType in producesResponseTypes)
             {
-                producesResponseTypesAttrsBuilder.Append($"[ProducesResponseType({(StatusCodes)responseType.Value!})]");
+                producesResponseTypesAttrsBuilder.Append($"\n\t\t[ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.{ConvertStatusCode(responseType)})]");
             }
 
             var producesResponseTypesAttrs = producesResponseTypesAttrsBuilder.ToString();
@@ -149,7 +144,7 @@ using DispatchEndpoints;
 
             var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
             var dispatcher = $"{(queryExist ? "var query = " : "")}await Dispatcher.{(commandExist ? "Send(request)" : "")}{(queryExist ? "Query(request)" : "")};";
-            var returnStatusCode = $"return {""}({(queryExist ? "query" : "")});";
+            var returnStatusCode = $"return {producesResponseTypes.FirstOrDefault()}({(queryExist ? "query" : "")});";
 
             var handlerMethod = clazz.GetMembers()
                 .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
@@ -186,6 +181,16 @@ $@"namespace {namespaceName}
 
         return sourceBuilder.ToString();
     }
+
+    private static string ConvertStatusCode(StatusCodes statusCode) => statusCode switch
+    {
+        StatusCodes.Ok => "Status200OK",
+        StatusCodes.BadRequest => "Status400BadRequest",
+        StatusCodes.Unathorized => "Status401Unauthorized",
+        StatusCodes.NotFound => "Status404NotFound",
+        StatusCodes.NoContent => "Status204NoContent",
+        _ => ""
+    };
 
     private static string GenerateCommandAndQueries(GeneratorExecutionContext context)
     {
