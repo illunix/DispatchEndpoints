@@ -20,12 +20,15 @@ internal class SourceGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
+        /*
 #if DEBUG
         if (!Debugger.IsAttached)
         {
             Debugger.Launch();
         }
 #endif 
+        */
+
         if (context.SyntaxReceiver is not SyntaxReceiver syntaxReceiver)
         {
             return;
