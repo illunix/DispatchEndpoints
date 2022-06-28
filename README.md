@@ -15,7 +15,8 @@ Register service
 ```csharp
 services.AddControllers().AddDispatchEndpoints()
 ```
-### Example of creating endpoint 
+## Creating endpoint 
+#### Query endpoint
 ```csharp
 [DispatchEndpoint(
     RequestMethod = HttpRequestMethods.GET,
@@ -33,17 +34,33 @@ public static partial class GetAll
 
     public static async Task<IEnumerable<Customer>> Handler()
     {
-        var customers = new Customer[]
-        {
-            new("Google"),
-            new("Amazon"),
-            new("Facebook")
-        };
+        var customers = new List<Customer>();
 
         return await Task.FromResult(customers);
     }
 }
 ```
+#### Command endpoint
+```csharp
+[DispatchEndpoint(
+    RequestMethod = HttpRequestMethods.POST,
+    ProducesResponseTypes = new[]
+    {
+        HttpStatusCodes.Ok,
+        HttpStatusCodes.BadRequest
+    }
+)]
+public static partial class CreateCustomer
+{
+    public partial record Command;
+
+    public static async Task Handler()
+    {
+        /* logic */
+    }
+}
+```
+## Generated Source
 ### Generated Controller
 ```csharp
 [Route("customers")]
@@ -61,6 +78,7 @@ public partial class CustomersController : ApiControllerBase
 }    
 ```
 ### Generated Dispatcher
+It's basically same for command/query
 ```csharp
 public partial class GetAll 
 {
@@ -76,8 +94,6 @@ public partial class GetAll
 }
 ```
 
----
-
 ## Wiki
 ### Dispatch Endpoint Attribute
 ```csharp
@@ -92,3 +108,19 @@ public class DispatchEndpointAttribute : Attribute
     public string? Policy { get; set; } // Set policy for auth
 }
 ```
+---
+### Passing arguments to ``Query/Command`` property
+```csharp
+public partial record Command(string Name);
+```
+Then you need to pass that property as first parameter of your handler like this
+```csharp
+public static async Task Handler(Command request)
+```
+---
+### Dependency injection
+DI is automatic here, you just need to pass ``Query/Command`` as first parameter then you can pass as many you want interface parameters like this
+```csharp
+public static async Task Handler(Command request, ICustomersRepository repo, INotificationService service)
+```
+Source generator will create constructor for you in generated file
