@@ -1,6 +1,6 @@
 ﻿namespace DispatchEndpoints;
 
-public enum RequestMethods
+public enum HttpRequestMethods
 {
     GET,
     POST,

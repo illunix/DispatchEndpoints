@@ -1,7 +1,7 @@
 ﻿namespace DispatchEndpoints.Example.Endpoints.Customers;
 
 [DispatchEndpoint(
-    RequestMethod = RequestMethods.GET,
+    RequestMethod = HttpRequestMethods.GET,
     ProducesResponseTypes = new[]
     {
         HttpStatusCodes.Ok,

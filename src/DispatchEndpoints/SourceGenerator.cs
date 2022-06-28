@@ -77,7 +77,7 @@ using DispatchEndpoints;
                 controllerName = namespaceName.Substring(namespaceName.LastIndexOf('.') + 1);
             }
 
-            var reqMethod = ((RequestMethods)attrProperties
+            var reqMethod = ((HttpRequestMethods)attrProperties
                 .Where(q => q.Key == "RequestMethod")
                 .Select(q => q.Value.Value!)
                 .FirstOrDefault()).ToString().ToLowerInvariant().FirstCharToUpper();
