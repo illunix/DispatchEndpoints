@@ -1,7 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using DispatchEndpoints.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using Microsoft.Extensions.Configuration;
-using DispatchEndpoints.Filters;
 
 namespace DispatchEndpoints;
 

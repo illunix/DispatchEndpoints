@@ -1,12 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DispatchEndpoints;
 
@@ -89,7 +85,7 @@ using DispatchEndpoints;
 
             var producesResponseTypes = attrProperties
                 .Where(q => q.Key == "ProducesResponseTypes")
-                .Select(q => q.Value.Values.Select(q => (StatusCodes)q.Value!))
+                .Select(q => q.Value.Values.Select(q => (HttpStatusCodes)q.Value!))
                 .FirstOrDefault();
 
             var producesResponseTypesAttrsBuilder = new StringBuilder();
@@ -303,13 +299,13 @@ $@"namespace {namespaceName}
         return sourceBuilder.ToString();
     }
 
-    private static string ConvertStatusCode(StatusCodes statusCode) => statusCode switch
+    private static string ConvertStatusCode(HttpStatusCodes statusCode) => statusCode switch
     {
-        StatusCodes.Ok => "Status200OK",
-        StatusCodes.BadRequest => "Status400BadRequest",
-        StatusCodes.Unathorized => "Status401Unauthorized",
-        StatusCodes.NotFound => "Status404NotFound",
-        StatusCodes.NoContent => "Status204NoContent",
+        HttpStatusCodes.Ok => "Status200OK",
+        HttpStatusCodes.BadRequest => "Status400BadRequest",
+        HttpStatusCodes.Unathorized => "Status401Unauthorized",
+        HttpStatusCodes.NotFound => "Status404NotFound",
+        HttpStatusCodes.NoContent => "Status204NoContent",
         _ => ""
     };
     private static void GetClasses(

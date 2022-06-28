@@ -3,9 +3,9 @@
 [DispatchEndpoint(
     RequestMethod = RequestMethods.GET,
     ProducesResponseTypes = new[]
-    { 
-        StatusCodes.Ok,
-        StatusCodes.BadRequest
+    {
+        HttpStatusCodes.Ok,
+        HttpStatusCodes.BadRequest
     }
 )]
 public static partial class GetAll
