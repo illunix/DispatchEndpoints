@@ -60,6 +60,17 @@ public static partial class CreateCustomer
     }
 }
 ```
+### Creating Request With Validator
+```csharp
+public partial record Query(string Id)
+{
+    public static void AddValidation(AbstractValidator<Query> v)
+    {
+        v.RuleFor(x => x.Id)
+            .NotEmpty();
+    }
+}
+```
 ## Generated Source
 ### Generated Controller
 ```csharp
