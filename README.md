@@ -100,7 +100,7 @@ public partial class GetAll
 [AttributeUsage(AttributeTargets.Class)]
 public class DispatchEndpointAttribute : Attribute
 {
-    public string? Controller { get; set; } // Set controller name, if you leave it empty source generator will get the directory name where endpoint is located by namespace
+    public string? Controller { get; set; } // Set controller name, if you leave it empty source generator will get the directory name where endpoint is located by namespace and use it as controller name
     public string? Route { get; set; } // Set route for endpoint  
     public HttpRequestMethods RequestMethod { get; set; } // Set http rquest method for method  
     public HttpStatusCodes[]? ProducesResponseTypes { get; set; } // Set produces response types status codes, first one is that what endpoint will return
