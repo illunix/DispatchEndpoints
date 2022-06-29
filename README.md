@@ -78,9 +78,9 @@ public partial record Query(string Id)
 public partial class CustomersController : ApiControllerBase
 {
     [HttpGet]
-    [ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.Status200OK)]
-    [ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<System.Collections.Generic.IEnumerable<DispatchEndpoints.Example.Endpoints.Customers.GetAll.Customer>>> GetAll([FromQuery] GetAll.Query request)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<Customer>>> GetAll([FromQuery] GetAll.Query request)
     {
         var query = await Dispatcher.Query(request);
 
