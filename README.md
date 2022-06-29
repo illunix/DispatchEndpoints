@@ -60,7 +60,7 @@ public static partial class CreateCustomer
     }
 }
 ```
-### Creating Request With Validator
+### Creating Request With Fluent Validaton
 ```csharp
 public partial record Query(string Id)
 {
