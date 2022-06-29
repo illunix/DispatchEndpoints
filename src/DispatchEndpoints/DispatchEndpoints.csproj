@@ -7,7 +7,8 @@
 	  <Description>Make Building Api's Easier</Description>
 	  <RepositoryUrl>https://github.com/illunix/DispatchEndpoints</RepositoryUrl>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <Version>1.0.5</Version>
+	  <Version>1.0.6</Version>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 	
 	<ItemGroup>
@@ -22,7 +23,7 @@
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 		<None Include="..\..\README.md">
 			<Pack>True</Pack>
-			<PackagePath></PackagePath>
+			<PackagePath>\</PackagePath>
 		</None>
 		<None Include="..\..\LICENSE">
 			<Pack>True</Pack>
