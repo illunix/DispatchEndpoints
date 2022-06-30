@@ -7,7 +7,7 @@ internal static class StringExtensions
 {
     public static string ToKebabCase(this string text)
     {
-        if (text == null)
+        if (text is null)
         {
             throw new ArgumentNullException(nameof(text));
         }
@@ -15,8 +15,11 @@ internal static class StringExtensions
         {
             return text;
         }
+
         var sb = new StringBuilder();
+
         sb.Append(char.ToLowerInvariant(text[0]));
+
         for (var i = 1; i < text.Length; ++i)
         {
             var c = text[i];
@@ -30,6 +33,7 @@ internal static class StringExtensions
                 sb.Append(c);
             }
         }
+
         return sb.ToString();
     }
 

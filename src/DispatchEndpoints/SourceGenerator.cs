@@ -346,22 +346,12 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
             return handleBuilder.ToString();
         };
 
-        var classType = clazz.GetType();
-
-        var classAccessModifier = () =>
-        {
-            if (classType.IsInternal())
-            {
-                return "internal";
-            }
-
-            return "public";
-        };
+        var classType = clazz as ISymbol;
 
         sourceBuilder.Append(
 @$"namespace {namespaceName}
 {{
-    {classAccessModifier()} partial class {clazz.Name} 
+    public partial class {clazz.Name} 
     {{
         {requestPropety()}{requestValidator()}
         private class {requestMethodName}HandlerCore : {requestHandlerInterface}

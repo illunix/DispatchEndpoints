@@ -18,7 +18,7 @@ public interface IDispatcher
     );
 }
 
-public sealed class Dispatcher : IDispatcher
+internal sealed class Dispatcher : IDispatcher
 {
     private readonly IServiceProvider _serviceProvider;
 
