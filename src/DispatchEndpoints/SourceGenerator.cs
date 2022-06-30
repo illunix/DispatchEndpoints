@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -16,14 +17,12 @@ internal class SourceGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
-        /*
 #if DEBUG
         if (!Debugger.IsAttached)
         {
             Debugger.Launch();
         }
 #endif 
-        */
 
         if (context.SyntaxReceiver is not SyntaxReceiver syntaxReceiver)
         {
@@ -35,6 +34,17 @@ internal class SourceGenerator : ISourceGenerator
             syntaxReceiver
         );
 
+        var controllersBuilder = new StringBuilder();
+        var dispatchersBuilder = new StringBuilder();
+
+        dispatchersBuilder.AppendLine("using DispatchEndpoints;\n");
+
+        foreach (var clazz in _classes)
+        {
+            dispatchersBuilder.Append(GenerateEndpointCore(clazz));
+        }
+
+        /*
         context.AddSource(
             "DispatchEndpoints.Controllers.g.cs",
             SourceText.From(
@@ -42,15 +52,15 @@ internal class SourceGenerator : ISourceGenerator
                 Encoding.UTF8
             )
         );
+        */
 
         context.AddSource(
             "DispatchEndpoints.Dispatchers.g.cs",
             SourceText.From(
-                GenerateCommandAndQueries(context),
+                dispatchersBuilder.ToString(),
                 Encoding.UTF8
             )
         );
-
     }
 
     private static string GenerateControllers()
@@ -181,120 +191,189 @@ $@"namespace {namespaceName}
         return sourceBuilder.ToString();
     }
 
-    private static string GenerateCommandAndQueries(GeneratorExecutionContext context)
+    private static string GenerateEndpointCore(INamedTypeSymbol clazz)
     {
         var sourceBuilder = new StringBuilder();
 
-        sourceBuilder.Append("using DispatchEndpoints;");
+        var commandExist = clazz.GetMembers()
+            .Any(q => q.Name == "Command");
 
-        foreach (var clazz in _classes)
+        var queryExist = clazz.GetMembers()
+            .Any(q => q.Name == "Query");
+
+        if (
+            commandExist &&
+            queryExist
+        )
         {
-            var namespaceName = clazz.ContainingNamespace.ToDisplayString();
+            return string.Empty;
+        }
 
-            var handlerMethod = clazz.GetMembers()
-                .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
+        var namespaceName = clazz.ContainingNamespace
+            .ToDisplayString();
 
-            if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
+        var handlerMethod = clazz.GetMembers()
+            .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
+
+        if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
+        {
+            return string.Empty;
+        }
+
+        var handlerMethodParams = handlerMethod.Parameters
+            .ToDictionary(q => q.Type, q => q.Name);
+
+        var handlerMethodParamsWithoutRequest = handlerMethodParams
+            .Where(q =>
+                q.Key.Name != "Command" &&
+                q.Key.Name != "Query"
+            );
+
+        var privateProperties = () =>
+        {
+            var privatePropertiesBuilder = new StringBuilder();
+
+            var handlerMethodParamsWithoutRequestParameter = handlerMethodParams
+                .Where(q =>
+                    q.Key.Name != "Command" &&
+                    q.Key.Name != "Query"
+                );
+
+            foreach (var param in handlerMethodParamsWithoutRequestParameter)
             {
-                return string.Empty;
-            }
-            var handlerMethodParams = handlerMethod.Parameters
-                .ToDictionary(q => q.Type, q => q.Name);
-            var handlerMethodParamsWithoutRequest = handlerMethodParams.Where(q => q.Key.Name != "Command" && q.Key.Name != "Query").ToList();
-
-            var propertiesBuilder = new StringBuilder();
-
-            foreach (var param in handlerMethodParams.Where(q => q.Key.Name != "Command" && q.Key.Name != "Query"))
-            {
-                propertiesBuilder.AppendLine($"private readonly {param.Key} _{param.Value};");
-            }
-
-            var requestBuilder = new StringBuilder();
-
-            var commandExist = clazz.GetMembers()
-                .Any(q => q.Name == "Command");
-
-            var queryExist = clazz.GetMembers()
-                .Any(q => q.Name == "Query");
-
-            if (commandExist && queryExist)
-            {
-                return string.Empty;
-            }
-
-            dynamic? type = null;
-
-            if (handlerMethodReturnType.TypeArguments.Any())
-            {
-                type = handlerMethodReturnType.TypeArguments.First();
+                privatePropertiesBuilder.AppendLine($"private readonly {param.Key} _{param.Value};");
             }
 
-            var requestInterface = type is not null ? $"IRequest<{handlerMethodReturnType.TypeArguments.FirstOrDefault()}>" : "IRequest";
+            return privatePropertiesBuilder.ToString();
+        };
 
-            if (clazz.GetMembers()
-                    .FirstOrDefault(q => q.Name == "Command" || q.Name == "Query") is not INamedTypeSymbol requestMethod)
-            {
-                return string.Empty;
-            }
+        var requestMethodName = clazz.GetMembers()
+            .Any(q => q.Name == "Command") ? "Command" : "Query";
 
-            var requestMethodName = clazz.GetMembers().Any(q => q.Name == "Command") ? "Command" : "Query";
+        if (clazz.GetMembers()
+            .FirstOrDefault(q =>
+                q.Name == "Command" ||
+                q.Name == "Query"
+            ) is not INamedTypeSymbol requestMethod
+        )
+        {
+            return string.Empty;
+        }
 
-            requestBuilder.Append($"public partial record {requestMethodName} : {requestInterface} {{ }}");
+        dynamic requestReturnType = handlerMethodReturnType.TypeArguments
+            .FirstOrDefault()!;
 
+        var requestHandlerInterface = $"IRequestHandler<{clazz.Name}.{requestMethodName}{(requestReturnType is null ? "" : $", { requestReturnType}")}>";
+
+        var requestPropety = () =>
+        {
+            var requestPropertyBuilder = new StringBuilder();
+
+
+            var requestInterface = requestReturnType is null ? "IRequest" : $"IRequest<{handlerMethodReturnType.TypeArguments.FirstOrDefault()}>";
+
+            requestPropertyBuilder.Append($"public partial record {requestMethodName} : {requestInterface} {{ }}");
+
+            return requestPropertyBuilder.ToString();
+        };
+
+        var requestValidator = () =>
+        {
             var requestValidatorBuilder = new StringBuilder();
-
-            var addValidationMethod = requestMethod.GetMembers().FirstOrDefault(x => x.Name == "AddValidation");
+            
+            var addValidationMethod = requestMethod.GetMembers()
+                .FirstOrDefault(q => q.Name == "AddValidation");
             if (addValidationMethod is not null)
             {
                 var className = $"{requestMethodName}Validator";
 
-                requestValidatorBuilder.Append($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
+                requestValidatorBuilder.Append($"\npublic class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
             }
 
+            return requestValidatorBuilder.ToString();
+        };
+
+        var constructor = () =>
+        {
             var constructorBuilder = new StringBuilder();
 
-            var constructorParams = string.Join(", ", handlerMethodParamsWithoutRequest.Select(q => $"{q.Key} {q.Value}"));
-            var injected = string.Join("\n", handlerMethodParamsWithoutRequest.Select(q => $"_{q.Value} = {q.Value};"));
+            var constructorParams = string.Join(
+                ", ", 
+                handlerMethodParamsWithoutRequest.Select(q => $"{q.Key} {q.Value}")
+            );
+            var injected = string.Join(
+                "\n", 
+                handlerMethodParamsWithoutRequest.Select(q => $@"_{q.Value} = {q.Value};")
+            );
 
             var useConstructor = handlerMethodParamsWithoutRequest.Any();
             if (useConstructor)
             {
                 constructorBuilder.AppendLine(
-                $@"public {requestMethodName}HandlerCore({constructorParams})
-                {{
-                    {injected}
-                }}"
-                );
+$@"public {requestMethodName}HandlerCore({constructorParams})
+{{
+    {injected}
+}}"
+);
             }
 
+            return constructorBuilder.ToString();
+        };
+
+        var handleMethod = () =>
+        {
             var handleBuilder = new StringBuilder();
 
-            var handlerParams = string.Join(", ", handlerMethodParams.Values.Select(q => q == "request" || q == "req" || q == "command" || q == "query" ? "request" : $"_{q}"));
-
-            handleBuilder.Append(
-                @$"public async Task<{type ?? ""}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
-            {{
-                {(type is null ? $"await Handler({handlerParams});" :
-                        $"return await Handler({handlerParams});")}
-            }}"
+            var handlerParams = string.Join(
+                ", ",
+                handlerMethodParams.Values
+                    .Select(q =>
+                        q == "request" || 
+                        q == "req" ||
+                        q == "command" ||
+                        q == "query" ? "request" : $"_{q}"
+                    )
             );
 
-            sourceBuilder.Append(
+            handleBuilder.Append(
+@$"public async Task<{requestReturnType ?? ""}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
+{{
+    {(requestReturnType is null ? $"await Handler({handlerParams});" :
+            $"return await Handler({handlerParams});")}
+}}"
+);
+
+            return handleBuilder.ToString();
+        };
+
+        var classType = clazz.GetType();
+
+        var classAccessModifier = () =>
+        {
+            if (classType.IsInternal())
+            {
+                return "internal";
+            }
+
+            return "public";
+        };
+
+        sourceBuilder.Append(
 @$"namespace {namespaceName}
 {{
-    public partial class {clazz.Name} 
+    {classAccessModifier()} partial class {clazz.Name} 
     {{
-        {requestBuilder}
-        {requestValidatorBuilder}
-        private class {requestMethodName}HandlerCore : IRequestHandler<{clazz.Name}.{requestMethodName}{(type is null ? "" : $", {type}")}>
+        {requestPropety()}{requestValidator()}
+        private class {requestMethodName}HandlerCore : {requestHandlerInterface}
         {{
-            {propertiesBuilder}{constructorBuilder}
-            {handleBuilder}
+            {privateProperties()}
+            {constructor()}
+            {handleMethod()}
         }}
     }}
 }}
-");
-        }
+"
+);
 
         return sourceBuilder.ToString();
     }
@@ -308,6 +387,7 @@ $@"namespace {namespaceName}
         HttpStatusCodes.NoContent => "Status204NoContent",
         _ => ""
     };
+
     private static void GetClasses(
        GeneratorExecutionContext context,
        SyntaxReceiver receiver
