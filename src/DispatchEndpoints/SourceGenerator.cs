@@ -38,7 +38,11 @@ internal class SourceGenerator : ISourceGenerator
 
         var controllersBuilder = new StringBuilder();
 
-        controllersBuilder.AppendLine("using DispatchEndpoints;");
+        controllersBuilder.AppendLine(
+@"using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using DispatchEndpoints; 
+");
 
         foreach (var clazz in _classes)
         {
@@ -74,12 +78,6 @@ internal class SourceGenerator : ISourceGenerator
     private static string GenerateController(INamedTypeSymbol clazz)
     {
         var sourceBuilder = new StringBuilder();
-
-        sourceBuilder.AppendLine(
-@"using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using DispatchEndpoints;
-");
 
         var namespaceName = clazz.ContainingNamespace.ToDisplayString();
 
@@ -282,10 +280,9 @@ $@"namespace {namespaceName}
         {
             var requestPropertyBuilder = new StringBuilder();
 
+            var requestInterface = requestReturnType is null ? "IRequest" : $"IRequest<{requestReturnType}>";
 
-            var requestInterface = requestReturnType is null ? "IRequest" : $"IRequest<{handlerMethodReturnType.TypeArguments.FirstOrDefault()}>";
-
-            requestPropertyBuilder.Append($"public partial record {requestMethodName} : {requestInterface} {{ }}");
+            requestPropertyBuilder.Append($"public partial record {requestMethodName} : {requestInterface} {{ }}\n");
 
             return requestPropertyBuilder.ToString();
         };
@@ -298,7 +295,7 @@ $@"namespace {namespaceName}
             {
                 var className = $"{requestMethodName}Validator";
 
-                requestValidatorBuilder.Append($"\npublic class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
+                requestValidatorBuilder.Append($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
             }
 
             return requestValidatorBuilder.ToString();
