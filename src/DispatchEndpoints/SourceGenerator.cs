@@ -17,12 +17,14 @@ internal class SourceGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
+        /*
 #if DEBUG
         if (!Debugger.IsAttached)
         {
             Debugger.Launch();
         }
 #endif 
+        */
 
         if (context.SyntaxReceiver is not SyntaxReceiver syntaxReceiver)
         {
@@ -35,6 +37,14 @@ internal class SourceGenerator : ISourceGenerator
         );
 
         var controllersBuilder = new StringBuilder();
+
+        controllersBuilder.AppendLine("using DispatchEndpoints;");
+
+        foreach (var clazz in _classes)
+        {
+            controllersBuilder.Append(GenerateController(clazz));
+        }
+
         var dispatchersBuilder = new StringBuilder();
 
         dispatchersBuilder.AppendLine("using DispatchEndpoints;\n");
@@ -44,18 +54,16 @@ internal class SourceGenerator : ISourceGenerator
             dispatchersBuilder.Append(GenerateEndpointCore(clazz));
         }
 
-        /*
         context.AddSource(
             "DispatchEndpoints.Controllers.g.cs",
             SourceText.From(
-                GenerateControllers(),
+                controllersBuilder.ToString(),
                 Encoding.UTF8
             )
         );
-        */
 
         context.AddSource(
-            "DispatchEndpoints.Dispatchers.g.cs",
+            "DispatchEndpoints.EndpointsCores.g.cs",
             SourceText.From(
                 dispatchersBuilder.ToString(),
                 Encoding.UTF8
@@ -63,7 +71,7 @@ internal class SourceGenerator : ISourceGenerator
         );
     }
 
-    private static string GenerateControllers()
+    private static string GenerateController(INamedTypeSymbol clazz)
     {
         var sourceBuilder = new StringBuilder();
 
@@ -73,104 +81,102 @@ using Microsoft.AspNetCore.Authorization;
 using DispatchEndpoints;
 ");
 
-        foreach (var clazz in _classes)
+        var namespaceName = clazz.ContainingNamespace.ToDisplayString();
+
+        var attrProperties = clazz.GetAttributes().FirstOrDefault()!.NamedArguments;
+        var controllerName = attrProperties
+            .Where(q => q.Key == "Controller")
+            .Select(q => q.Value.Value!.ToString())
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(controllerName))
         {
-            var namespaceName = clazz.ContainingNamespace.ToDisplayString();
+            controllerName = namespaceName.Substring(namespaceName.LastIndexOf('.') + 1);
+        }
 
-            var attrProperties = clazz.GetAttributes().FirstOrDefault()!.NamedArguments;
-            var controllerName = attrProperties
-                .Where(q => q.Key == "Controller")
+        var reqMethod = ((HttpRequestMethods)attrProperties
+            .Where(q => q.Key == "RequestMethod")
+            .Select(q => q.Value.Value!)
+            .FirstOrDefault()).ToString().ToLowerInvariant().FirstCharToUpper();
+        var methodName = clazz.Name;
+
+        var producesResponseTypes = attrProperties
+            .Where(q => q.Key == "ProducesResponseTypes")
+            .Select(q => q.Value.Values.Select(q => (HttpStatusCodes)q.Value!))
+            .FirstOrDefault();
+
+        var producesResponseTypesAttrsBuilder = new StringBuilder();
+
+        foreach (var responseType in producesResponseTypes)
+        {
+            producesResponseTypesAttrsBuilder.Append($"\n\t\t[ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.{ConvertStatusCode(responseType)})]");
+        }
+
+        var producesResponseTypesAttrs = producesResponseTypesAttrsBuilder.ToString();
+
+        var route = attrProperties
+            .Where(q => q.Key == "Route")
+            .Select(q => q.Value.Value!.ToString())
+            .FirstOrDefault();
+        var auth = attrProperties
+            .Where(q => q.Key == "Auth")
+            .Select(q => q.Value.Value!)
+            .FirstOrDefault();
+
+        var policy = "";
+
+        if (auth is not null)
+        {
+            policy = attrProperties
+                .Where(q => q.Key == "Policy")
                 .Select(q => q.Value.Value!.ToString())
                 .FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(controllerName))
-            {
-                controllerName = namespaceName.Substring(namespaceName.LastIndexOf('.') + 1);
-            }
+        }
 
-            var reqMethod = ((HttpRequestMethods)attrProperties
-                .Where(q => q.Key == "RequestMethod")
-                .Select(q => q.Value.Value!)
-                .FirstOrDefault()).ToString().ToLowerInvariant().FirstCharToUpper();
-            var methodName = clazz.Name;
+        var fromAttr = "";
+        var req = "";
 
-            var producesResponseTypes = attrProperties
-                .Where(q => q.Key == "ProducesResponseTypes")
-                .Select(q => q.Value.Values.Select(q => (HttpStatusCodes)q.Value!))
-                .FirstOrDefault();
+        var commandExist = clazz.GetMembers()
+            .Where(q => q.Name == "Command")
+            .Any();
+        if (commandExist)
+        {
+            fromAttr = "[FromBody]";
+            req = "Command";
+        }
 
-            var producesResponseTypesAttrsBuilder = new StringBuilder();
+        var queryExist = clazz.GetMembers()
+            .Where(q => q.Name == "Query")
+            .Any();
+        if (queryExist)
+        {
+            fromAttr = "[FromQuery]";
+            req = "Query";
+        }
 
-            foreach (var responseType in producesResponseTypes)
-            {
-                producesResponseTypesAttrsBuilder.Append($"\n\t\t[ProducesResponseType(Microsoft.AspNetCore.Http.StatusCodes.{ConvertStatusCode(responseType)})]");
-            }
+        var routeAttr = $"[Route(\"{controllerName.ToKebabCase()}\")]";
+        var httpAttr = $"[Http{reqMethod}({(!string.IsNullOrWhiteSpace(route) ? $"\"{route}\"" : "").ToKebabCase()})]";
+        var authAttr = $"{(auth is not null ? $"\n[Authorize{(!string.IsNullOrWhiteSpace(policy) ? $"(\"{policy}\")" : "")}]" : "")}";
 
-            var producesResponseTypesAttrs = producesResponseTypesAttrsBuilder.ToString();
+        var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
+        var dispatcher = $"{(queryExist ? "var query = " : "")}await Dispatcher.{(commandExist ? "Send(request)" : "")}{(queryExist ? "Query(request)" : "")};";
+        var returnStatusCode = $"return {producesResponseTypes.FirstOrDefault()}({(queryExist ? "query" : "")});";
 
-            var route = attrProperties
-                .Where(q => q.Key == "Route")
-                .Select(q => q.Value.Value!.ToString())
-                .FirstOrDefault();
-            var auth = attrProperties
-                .Where(q => q.Key == "Auth")
-                .Select(q => q.Value.Value!)
-                .FirstOrDefault();
+        var handlerMethod = clazz.GetMembers()
+            .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
 
-            var policy = "";
+        if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
+        {
+            return string.Empty;
+        }
 
-            if (auth is not null)
-            {
-                policy = attrProperties
-                    .Where(q => q.Key == "Policy")
-                    .Select(q => q.Value.Value!.ToString())
-                    .FirstOrDefault();
-            }
+        var returnType = $"ActionResult";
 
-            var fromAttr = "";
-            var req = "";
+        if (handlerMethodReturnType.TypeArguments.Any())
+        {
+            returnType = $"ActionResult<{handlerMethodReturnType.TypeArguments.First()}>";
+        }
 
-            var commandExist = clazz.GetMembers()
-                .Where(q => q.Name == "Command")
-                .Any();
-            if (commandExist)
-            {
-                fromAttr = "[FromBody]";
-                req = "Command";
-            }
-
-            var queryExist = clazz.GetMembers()
-                .Where(q => q.Name == "Query")
-                .Any();
-            if (queryExist)
-            {
-                fromAttr = "[FromQuery]";
-                req = "Query";
-            }
-
-            var routeAttr = $"[Route(\"{controllerName.ToKebabCase()}\")]";
-            var httpAttr = $"[Http{reqMethod}({(!string.IsNullOrWhiteSpace(route) ? $"\"{route}\"" : "").ToKebabCase()})]";
-            var authAttr = $"{(auth is not null ? $"\n[Authorize{(!string.IsNullOrWhiteSpace(policy) ? $"(\"{policy}\")" : "")}]" : "")}";
-
-            var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
-            var dispatcher = $"{(queryExist ? "var query = " : "")}await Dispatcher.{(commandExist ? "Send(request)" : "")}{(queryExist ? "Query(request)" : "")};";
-            var returnStatusCode = $"return {producesResponseTypes.FirstOrDefault()}({(queryExist ? "query" : "")});";
-
-            var handlerMethod = clazz.GetMembers()
-                .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
-
-            if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
-            {
-                return string.Empty;
-            }
-
-            var returnType = $"ActionResult";
-
-            if (handlerMethodReturnType.TypeArguments.Any())
-            {
-                returnType = $"ActionResult<{handlerMethodReturnType.TypeArguments.First()}>";
-            }
-
-            sourceBuilder.Append(
+        sourceBuilder.Append(
 $@"namespace {namespaceName} 
 {{
     {routeAttr}
@@ -186,7 +192,6 @@ $@"namespace {namespaceName}
     }}
 }}
 ");
-        }
 
         return sourceBuilder.ToString();
     }
@@ -207,6 +212,24 @@ $@"namespace {namespaceName}
         )
         {
             return string.Empty;
+        }
+
+        if (clazz.GetMembers()
+            .FirstOrDefault(q =>
+                q.Name == "Command" ||
+                q.Name == "Query"
+            ) is not INamedTypeSymbol requestMethod
+        )
+        {
+            return string.Empty;
+        }
+
+        var addValidationMethod = requestMethod.GetMembers()
+            .FirstOrDefault(q => q.Name == "AddValidation");
+
+        if (addValidationMethod is not null)
+        {
+            sourceBuilder.Append("using FluentValidation;");
         }
 
         var namespaceName = clazz.ContainingNamespace
@@ -250,16 +273,6 @@ $@"namespace {namespaceName}
         var requestMethodName = clazz.GetMembers()
             .Any(q => q.Name == "Command") ? "Command" : "Query";
 
-        if (clazz.GetMembers()
-            .FirstOrDefault(q =>
-                q.Name == "Command" ||
-                q.Name == "Query"
-            ) is not INamedTypeSymbol requestMethod
-        )
-        {
-            return string.Empty;
-        }
-
         dynamic requestReturnType = handlerMethodReturnType.TypeArguments
             .FirstOrDefault()!;
 
@@ -281,8 +294,6 @@ $@"namespace {namespaceName}
         {
             var requestValidatorBuilder = new StringBuilder();
             
-            var addValidationMethod = requestMethod.GetMembers()
-                .FirstOrDefault(q => q.Name == "AddValidation");
             if (addValidationMethod is not null)
             {
                 var className = $"{requestMethodName}Validator";
@@ -311,9 +322,9 @@ $@"namespace {namespaceName}
             {
                 constructorBuilder.AppendLine(
 $@"public {requestMethodName}HandlerCore({constructorParams})
-{{
-    {injected}
-}}"
+            {{
+                {injected}
+            }}"
 );
             }
 
@@ -337,10 +348,10 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
 
             handleBuilder.Append(
 @$"public async Task<{requestReturnType ?? ""}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
-{{
-    {(requestReturnType is null ? $"await Handler({handlerParams});" :
-            $"return await Handler({handlerParams});")}
-}}"
+            {{
+                {(requestReturnType is null ? $"await Handler({handlerParams});" :
+                        $"return await Handler({handlerParams});")}
+            }}"
 );
 
             return handleBuilder.ToString();
