@@ -49,6 +49,14 @@ using DispatchEndpoints;
             controllersBuilder.Append(GenerateController(@class));
         }
 
+        context.AddSource(
+            "DispatchEndpoints.Controllers.g.cs",
+            SourceText.From(
+                controllersBuilder.ToString(),
+                Encoding.UTF8
+            )
+        );
+
         var dispatchersBuilder = new StringBuilder();
 
         dispatchersBuilder.AppendLine("using DispatchEndpoints;\n");
@@ -57,14 +65,6 @@ using DispatchEndpoints;
         {
             dispatchersBuilder.Append(GenerateEndpointCore(@class));
         }
-
-        context.AddSource(
-            "DispatchEndpoints.Controllers.g.cs",
-            SourceText.From(
-                controllersBuilder.ToString(),
-                Encoding.UTF8
-            )
-        );
 
         context.AddSource(
             "DispatchEndpoints.EndpointsCores.g.cs",
