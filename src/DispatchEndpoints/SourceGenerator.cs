@@ -149,8 +149,22 @@ using DispatchEndpoints;
             req = "Query";
         }
 
+        var actionName = $"({(string.IsNullOrWhiteSpace(route) ? $"\"{@class.Name.PascalToKebabCase()}\"" : $"\"{route}\"")})";
+        if (
+            @class.Name == "Get" ||
+            @class.Name == "GetAll" ||
+            @class.Name == "GetById" ||
+            @class.Name == "Create" ||
+            @class.Name == "Update" ||
+            @class.Name == "Delete" ||
+            @class.Name == "Remove"
+        ) 
+        {
+            actionName = "";
+        }
+
         var routeAttr = $"[Route(\"{controllerName.PascalToKebabCase()}\")]";
-        var httpAttr = $"[Http{reqMethod}({(string.IsNullOrWhiteSpace(route) ? $"\"{@class.Name.PascalToKebabCase()}\"" : $"\"{route}\"")})]";
+        var httpAttr = $"[Http{reqMethod}{actionName}]";
         var authAttr = $"{(auth is not null ? $"\n[Authorize{(!string.IsNullOrWhiteSpace(policy) ? $"(\"{policy}\")" : "")}]" : "")}";
 
         var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
