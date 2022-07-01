@@ -11,6 +11,7 @@ namespace DispatchEndpoints;
 internal class SourceGenerator : ISourceGenerator
 {
     private static List<INamedTypeSymbol> _classes = new();
+
     private static StringBuilder _endpointsCores { get; set; } = new();
 
     public void Initialize(GeneratorInitializationContext context)
@@ -18,7 +19,7 @@ internal class SourceGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
-#if DEBUG
+#if DEBUGATTACH
         if (!Debugger.IsAttached)
         {
             Debugger.Launch();
