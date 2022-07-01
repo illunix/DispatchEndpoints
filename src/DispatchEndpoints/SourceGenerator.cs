@@ -344,7 +344,7 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
             );
 
             handleBuilder.Append(
-@$"public async Task<{requestReturnType ?? ""}> Handle({requestMethodName} request, CancellationToken cancellationToken) 
+@$"public async Task{(requestReturnType is null ? "" : $"<{requestReturnType}>")} Handle({requestMethodName} request, CancellationToken cancellationToken) 
             {{
                 {(requestReturnType is null ? $"await Handler({handlerParams});" :
                         $"return await Handler({handlerParams});")}
