@@ -295,7 +295,7 @@ $@"namespace {namespaceName}
             {
                 var className = $"{requestMethodName}Validator";
 
-                requestValidatorBuilder.Append($"public class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}");
+                requestValidatorBuilder.Append($"\n\t\tpublic class {className} : AbstractValidator<{requestMethodName}> {{ public {className}() {{ {requestMethodName}.AddValidation(this); }} }}\n");
             }
 
             return requestValidatorBuilder.ToString();
@@ -357,7 +357,8 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
         var classType = @class as ISymbol;
 
         sourceBuilder.Append(
-@$"namespace {namespaceName}
+@$"
+namespace {namespaceName}
 {{
     public partial class {@class.Name} 
     {{
