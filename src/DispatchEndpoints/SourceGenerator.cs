@@ -41,8 +41,7 @@ internal class SourceGenerator : ISourceGenerator
         controllersBuilder.AppendLine(
 @"using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using DispatchEndpoints; 
-");
+using DispatchEndpoints;");
 
         foreach (var @class in _classes)
         {
@@ -187,7 +186,8 @@ using DispatchEndpoints;
         }
 
         sourceBuilder.Append(
-$@"namespace {namespaceName} 
+$@"
+namespace {namespaceName} 
 {{
     {routeAttr}
     public partial class {controllerName}Controller : ApiControllerBase
