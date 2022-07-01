@@ -44,18 +44,18 @@ using Microsoft.AspNetCore.Authorization;
 using DispatchEndpoints; 
 ");
 
-        foreach (var clazz in _classes)
+        foreach (var @class in _classes)
         {
-            controllersBuilder.Append(GenerateController(clazz));
+            controllersBuilder.Append(GenerateController(@class));
         }
 
         var dispatchersBuilder = new StringBuilder();
 
         dispatchersBuilder.AppendLine("using DispatchEndpoints;\n");
 
-        foreach (var clazz in _classes)
+        foreach (var @class in _classes)
         {
-            dispatchersBuilder.Append(GenerateEndpointCore(clazz));
+            dispatchersBuilder.Append(GenerateEndpointCore(@class));
         }
 
         context.AddSource(
@@ -75,13 +75,13 @@ using DispatchEndpoints;
         );
     }
 
-    private static string GenerateController(INamedTypeSymbol clazz)
+    private static string GenerateController(INamedTypeSymbol @class)
     {
         var sourceBuilder = new StringBuilder();
 
-        var namespaceName = clazz.ContainingNamespace.ToDisplayString();
+        var namespaceName = @class.ContainingNamespace.ToDisplayString();
 
-        var attrProperties = clazz.GetAttributes().FirstOrDefault()!.NamedArguments;
+        var attrProperties = @class.GetAttributes().FirstOrDefault()!.NamedArguments;
         var controllerName = attrProperties
             .Where(q => q.Key == "Controller")
             .Select(q => q.Value.Value!.ToString())
@@ -95,7 +95,7 @@ using DispatchEndpoints;
             .Where(q => q.Key == "RequestMethod")
             .Select(q => q.Value.Value!)
             .FirstOrDefault()).ToString().ToLowerInvariant().FirstCharToUpper();
-        var methodName = clazz.Name;
+        var methodName = @class.Name;
 
         var producesResponseTypes = attrProperties
             .Where(q => q.Key == "ProducesResponseTypes")
@@ -133,7 +133,7 @@ using DispatchEndpoints;
         var fromAttr = "";
         var req = "";
 
-        var commandExist = clazz.GetMembers()
+        var commandExist = @class.GetMembers()
             .Where(q => q.Name == "Command")
             .Any();
         if (commandExist)
@@ -142,7 +142,7 @@ using DispatchEndpoints;
             req = "Command";
         }
 
-        var queryExist = clazz.GetMembers()
+        var queryExist = @class.GetMembers()
             .Where(q => q.Name == "Query")
             .Any();
         if (queryExist)
@@ -159,7 +159,7 @@ using DispatchEndpoints;
         var dispatcher = $"{(queryExist ? "var query = " : "")}await Dispatcher.{(commandExist ? "Send(request)" : "")}{(queryExist ? "Query(request)" : "")};";
         var returnStatusCode = $"return {producesResponseTypes.FirstOrDefault()}({(queryExist ? "query" : "")});";
 
-        var handlerMethod = clazz.GetMembers()
+        var handlerMethod = @class.GetMembers()
             .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
 
         if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
@@ -194,14 +194,14 @@ $@"namespace {namespaceName}
         return sourceBuilder.ToString();
     }
 
-    private static string GenerateEndpointCore(INamedTypeSymbol clazz)
+    private static string GenerateEndpointCore(INamedTypeSymbol @class)
     {
         var sourceBuilder = new StringBuilder();
 
-        var commandExist = clazz.GetMembers()
+        var commandExist = @class.GetMembers()
             .Any(q => q.Name == "Command");
 
-        var queryExist = clazz.GetMembers()
+        var queryExist = @class.GetMembers()
             .Any(q => q.Name == "Query");
 
         if (
@@ -212,7 +212,7 @@ $@"namespace {namespaceName}
             return string.Empty;
         }
 
-        if (clazz.GetMembers()
+        if (@class.GetMembers()
             .FirstOrDefault(q =>
                 q.Name == "Command" ||
                 q.Name == "Query"
@@ -230,10 +230,10 @@ $@"namespace {namespaceName}
             sourceBuilder.Append("using FluentValidation;");
         }
 
-        var namespaceName = clazz.ContainingNamespace
+        var namespaceName = @class.ContainingNamespace
             .ToDisplayString();
 
-        var handlerMethod = clazz.GetMembers()
+        var handlerMethod = @class.GetMembers()
             .FirstOrDefault(q => q.Name == "Handler") as IMethodSymbol;
 
         if (handlerMethod?.ReturnType is not INamedTypeSymbol handlerMethodReturnType)
@@ -268,13 +268,13 @@ $@"namespace {namespaceName}
             return privatePropertiesBuilder.ToString();
         };
 
-        var requestMethodName = clazz.GetMembers()
+        var requestMethodName = @class.GetMembers()
             .Any(q => q.Name == "Command") ? "Command" : "Query";
 
         dynamic requestReturnType = handlerMethodReturnType.TypeArguments
             .FirstOrDefault()!;
 
-        var requestHandlerInterface = $"IRequestHandler<{clazz.Name}.{requestMethodName}{(requestReturnType is null ? "" : $", { requestReturnType}")}>";
+        var requestHandlerInterface = $"IRequestHandler<{@class.Name}.{requestMethodName}{(requestReturnType is null ? "" : $", { requestReturnType}")}>";
 
         var requestPropety = () =>
         {
@@ -354,12 +354,12 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
             return handleBuilder.ToString();
         };
 
-        var classType = clazz as ISymbol;
+        var classType = @class as ISymbol;
 
         sourceBuilder.Append(
 @$"namespace {namespaceName}
 {{
-    public partial class {clazz.Name} 
+    public partial class {@class.Name} 
     {{
         {requestPropety()}{requestValidator()}
         private class {requestMethodName}HandlerCore : {requestHandlerInterface}
@@ -393,10 +393,10 @@ $@"public {requestMethodName}HandlerCore({constructorParams})
     {
         var compilation = context.Compilation;
 
-        foreach (var clazz in receiver.CandidateClasses)
+        foreach (var @class in receiver.CandidateClasses)
         {
-            var model = compilation.GetSemanticModel(clazz.SyntaxTree);
-            var classSymbol = (INamedTypeSymbol)model.GetDeclaredSymbol(clazz)!;
+            var model = compilation.GetSemanticModel(@class.SyntaxTree);
+            var classSymbol = (INamedTypeSymbol)model.GetDeclaredSymbol(@class)!;
             if (classSymbol is null)
             {
                 break;
