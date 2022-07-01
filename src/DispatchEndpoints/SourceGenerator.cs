@@ -11,20 +11,19 @@ namespace DispatchEndpoints;
 internal class SourceGenerator : ISourceGenerator
 {
     private static List<INamedTypeSymbol> _classes = new();
+    private static StringBuilder _endpointsCores { get; set; } = new();
 
     public void Initialize(GeneratorInitializationContext context)
         => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
 
     public void Execute(GeneratorExecutionContext context)
     {
-        /*
 #if DEBUG
         if (!Debugger.IsAttached)
         {
             Debugger.Launch();
         }
 #endif 
-        */
 
         if (context.SyntaxReceiver is not SyntaxReceiver syntaxReceiver)
         {
@@ -57,19 +56,17 @@ using DispatchEndpoints;
             )
         );
 
-        var dispatchersBuilder = new StringBuilder();
-
-        dispatchersBuilder.AppendLine("using DispatchEndpoints;\n");
-
         foreach (var @class in _classes)
         {
-            dispatchersBuilder.Append(GenerateEndpointCore(@class));
+            _endpointsCores.Append(GenerateEndpointCore(@class));
         }
+
+        _endpointsCores?.Insert(0, "using DispatchEndpoints;\n");
 
         context.AddSource(
             "DispatchEndpoints.EndpointsCores.g.cs",
             SourceText.From(
-                dispatchersBuilder.ToString(),
+                _endpointsCores?.ToString()!,
                 Encoding.UTF8
             )
         );
@@ -151,8 +148,8 @@ using DispatchEndpoints;
             req = "Query";
         }
 
-        var routeAttr = $"[Route(\"{controllerName.ToKebabCase()}\")]";
-        var httpAttr = $"[Http{reqMethod}({(!string.IsNullOrWhiteSpace(route) ? $"\"{route}\"" : "").ToKebabCase()})]";
+        var routeAttr = $"[Route(\"{controllerName.PascalToKebabCase()}\")]";
+        var httpAttr = $"[Http{reqMethod}({(string.IsNullOrWhiteSpace(route) ? $"\"{@class.Name.PascalToKebabCase()}\"" : $"\"{route}\"")})]";
         var authAttr = $"{(auth is not null ? $"\n[Authorize{(!string.IsNullOrWhiteSpace(policy) ? $"(\"{policy}\")" : "")}]" : "")}";
 
         var methodNameWithParams = $"{methodName}({fromAttr} {methodName}.{req} request)";
@@ -227,7 +224,7 @@ $@"namespace {namespaceName}
 
         if (addValidationMethod is not null)
         {
-            sourceBuilder.Append("using FluentValidation;");
+            _endpointsCores?.Insert(0, "using FluentValidation;\n");
         }
 
         var namespaceName = @class.ContainingNamespace

@@ -1,40 +1,26 @@
 ﻿using System;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DispatchEndpoints;
 
 internal static class StringExtensions
 {
-    public static string ToKebabCase(this string text)
+    public static string PascalToKebabCase(this string value)
     {
-        if (text is null)
+        if (string.IsNullOrEmpty(value))
         {
-            throw new ArgumentNullException(nameof(text));
-        }
-        if (text.Length < 2)
-        {
-            return text;
+            return value;
         }
 
-        var sb = new StringBuilder();
-
-        sb.Append(char.ToLowerInvariant(text[0]));
-
-        for (var i = 1; i < text.Length; ++i)
-        {
-            var c = text[i];
-            if (char.IsUpper(c))
-            {
-                sb.Append('-');
-                sb.Append(char.ToLowerInvariant(c));
-            }
-            else
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb.ToString();
+        return Regex.Replace(
+            value,
+            "(?<!^)([A-Z][a-z]|(?<=[a-z])[A-Z])",
+            "-$1",
+            RegexOptions.Compiled
+        )
+            .Trim()
+            .ToLower();
     }
 
     public static string FirstCharToUpper(this string input)
