@@ -396,6 +396,7 @@ namespace {namespaceName}
         HttpStatusCodes.Unathorized => "Status401Unauthorized",
         HttpStatusCodes.NotFound => "Status404NotFound",
         HttpStatusCodes.NoContent => "Status204NoContent",
+        HttpStatusCodes.Conflict => "Status409Conflict",
         _ => ""
     };
 

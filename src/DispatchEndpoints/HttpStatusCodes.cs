@@ -6,5 +6,6 @@ public enum HttpStatusCodes
     BadRequest,
     NotFound,
     Unathorized,
-    NoContent
+    NoContent,
+    Conflict
 }

@@ -15,6 +15,11 @@ public static class MvcExtensions
 
         builder.Services.Scan(q => q.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
             .AddClasses(q => q.AssignableTo(typeof(IRequestHandler<>)))
+            .AsImplementedInterfaces()
+            .WithTransientLifetime()
+        );
+
+        builder.Services.Scan(q => q.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
             .AddClasses(q => q.AssignableTo(typeof(IRequestHandler<,>)))
             .AsImplementedInterfaces()
             .WithTransientLifetime()
